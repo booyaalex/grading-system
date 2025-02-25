@@ -1,6 +1,5 @@
 import java.sql.*;
 import com.google.gson.Gson;
-import java.time.LocalDateTime;
 import java.util.Vector;
 
 class Student {
@@ -9,7 +8,7 @@ class Student {
     String lastName;
     String email;
     Date birthday;
-    Integer overallGrade;
+    int overallGrade;
     Assignment[] grades;
 
     public Student(int studentID, String firstName, String lastName, String email, Date birthday, int overallGrade) {
@@ -25,8 +24,14 @@ class Student {
 class Assignment {
     int assignmentID;
     String name;
-    LocalDateTime dueDate;
+    Date dueDate;
     Integer grade = null;
+
+    public Assignment(int assignmentID, String name, Date dueDate) {
+        this.assignmentID = assignmentID;
+        this.name = name;
+        this.dueDate = dueDate;
+    }
 }
 
 public class Database {
@@ -65,6 +70,28 @@ public class Database {
             System.out.println(exception);
         }
         return students;
+    }
+
+    public Vector<Assignment> getAssignments() {
+        Vector<Assignment> assignments = new Vector<>();
+        try {
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery(
+                    "select * from assignments");
+
+            while (resultSet.next()) {
+                Assignment assignment = new Assignment(resultSet.getInt("ID"),
+                        resultSet.getString("NAME"),
+                        resultSet.getDate("DUE_DATE"));
+                assignments.add(assignment);
+            }
+
+            resultSet.close();
+            statement.close();
+        } catch (Exception exception) {
+            System.out.println(exception);
+        }
+        return assignments;
     }
 
     public void addStudent(Student student) {
