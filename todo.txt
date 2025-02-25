@@ -1,0 +1,11 @@
+Left Pages
+| | Student List
+| | Assignment List
+
+Right Pages
+| | Student Details
+| | Student Adder
+| | Student Editor
+| | Assignment Creator
+| | Assignment Editor
+| | Assignment Details
