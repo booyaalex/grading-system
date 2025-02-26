@@ -72,6 +72,32 @@ public class Database {
         return students;
     }
 
+    public Student getStudent(String name) {
+        Student student = null;
+        String[] fullName = name.split(" ");
+        try {
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery(
+                    "select * from students where FIRST_NAME = '" + fullName[0] + "' AND LAST_NAME = '" + fullName[1] + "';");
+
+            while (resultSet.next()) {
+                student = new Student(resultSet.getInt("ID"),
+                        resultSet.getString("FIRST_NAME"),
+                        resultSet.getString("LAST_NAME"),
+                        resultSet.getString("EMAIL"),
+                        resultSet.getDate("BIRTHDAY"),
+                        resultSet.getInt("OVERALL_GRADE"));
+                student.grades = deserializeString(resultSet.getString("GRADES"));
+            }
+
+            resultSet.close();
+            statement.close();
+        } catch (Exception exception) {
+            System.out.println(exception);
+        }
+        return student;
+    }
+
     public Vector<Assignment> getAssignments() {
         Vector<Assignment> assignments = new Vector<>();
         try {
