@@ -2,12 +2,10 @@ import java.awt.*;
 import java.awt.event.*;
 import java.sql.Date;
 import java.text.DateFormat;
-
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.table.TableColumnModel;
-
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.table.*;
 import java.util.Locale;
 import java.util.Vector;
 
@@ -18,7 +16,7 @@ class Student {
     String email;
     Date birthday;
     int overallGrade;
-    Assignment[] grades;
+    Vector<Assignment> grades;
 
     public Student(int studentID, String firstName, String lastName, String email, Date birthday, int overallGrade) {
         this.studentID = studentID;
@@ -50,7 +48,6 @@ public class App {
             public void actionPerformed(ActionEvent e) {
                 pnl_StudentListPanel.setVisible(true);
                 pnl_AssignmentListPanel.setVisible(false);
-                lbl_LeftPanelTitle.setText("Students");
             }
         });
         btn_AssignmentList.addActionListener(new ActionListener() {
@@ -58,20 +55,52 @@ public class App {
             public void actionPerformed(ActionEvent e) {
                 pnl_AssignmentListPanel.setVisible(true);
                 pnl_StudentListPanel.setVisible(false);
-                lbl_LeftPanelTitle.setText("Assignments");
+            }
+        });
+        tbl_StudentList.addMouseListener(new MouseListener() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (tbl_StudentList.getSelectedRow() != -1) {
+                    displayStudentInfo(tbl_StudentList.getSelectedRow());
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+            }
+        });
+        tbl_StudentGradesTable.getModel().addTableModelListener(new TableModelListener() {
+            public void tableChanged(TableModelEvent evt) {
+                System.out.println("test");
             }
         });
     }
 
+    private void displayRightPanel(JPanel selectedPanel) {
+        JPanel[] rightPanels = { pnl_StudentDetailsPanel, pnl_StudentAdderPanel, pnl_StudentEditorPanel, pnl_AssignmentDetailsPanel, pnl_AssignmentCreatorPanel, pnl_AssignmentEditorPanel };
+        for(JPanel panel : rightPanels) {
+            if(panel == selectedPanel) {
+                panel.setVisible(true);
+            } else {
+                panel.setVisible(false);
+            }
+        }
+    }
+
     private void displayStudentInfo(int selectedRowIndex) {
         Database db = new Database();
-
-        pnl_StudentDetailsPanel.setVisible(true);
-        pnl_StudentAdderPanel.setVisible(false);
-        pnl_StudentEditorPanel.setVisible(false);
-        pnl_AssignmentDetailsPanel.setVisible(false);
-        pnl_AssignmentCreatorPanel.setVisible(false);
-        pnl_AssignmentEditorPanel.setVisible(false);
 
         Student student = db.getStudent(tbl_StudentList.getValueAt(selectedRowIndex, 0) + " "
                 + tbl_StudentList.getValueAt(selectedRowIndex, 1));
@@ -81,12 +110,22 @@ public class App {
                 + DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.ENGLISH).format(student.birthday));
         lbl_StudenGrade.setText("Grade: " + String.valueOf(student.overallGrade));
 
-        tbl_StudentGradesTable = makeStudentAssignmentsTable(student);
+        tbl_StudentGradesTable.setModel(makeStudentAssignmentsTable(student));
+        tbl_StudentGradesTable.getModel().addTableModelListener(new TableModelListener() {
+            public void tableChanged(TableModelEvent evt) {
+                if (evt.getColumn() != 1) { return; }
+                student.grades.elementAt(tbl_StudentGradesTable.getSelectedRow()).grade = Integer.valueOf(tbl_StudentGradesTable.getValueAt(tbl_StudentGradesTable.getSelectedRow(), 1) + "");
+                student.overallGrade = db.calculateStudentOverallGrade(student);
+                db.updateStudent(student);
+            }
+        });
 
+        displayRightPanel(pnl_StudentDetailsPanel);
     }
 
     private JTable makeStudentsTable() {
         Database db = new Database();
+
         String[] columnNames = { "First Name", "Last Name", "Email", "Grade" };
         Vector<Student> students = db.getStudents();
         Object[][] data = new Object[students.size()][4];
@@ -97,10 +136,6 @@ public class App {
         }
 
         JTable table = new JTable(data, columnNames);
-
-        ListSelectionModel listSelectionModel = table.getSelectionModel();
-        listSelectionModel.addListSelectionListener(new SharedListSelectionHandler());
-        table.setSelectionModel(listSelectionModel);
 
         TableColumnModel columnModel = table.getColumnModel();
         columnModel.getColumn(0).setPreferredWidth(100);
@@ -129,21 +164,21 @@ public class App {
         return table;
     }
 
-    private JTable makeStudentAssignmentsTable(Student student) {
-        JTable table = new JTable();
-        try {
-            String[] columnNames = { "Name", "Grade", "Due Date" };
-            Object[][] data = new Object[student.grades.length][3];
-            for (int i = 0; i < student.grades.length; i++) {
-                Object[] obj = { student.grades[i].name, student.grades[i].grade, student.grades[i].dueDate };
-                data[i] = obj;
-            }
+    private JTable makeStudentAssignmentsTable() {
+        String[] columnNames = { "Name", "Grade", "Due Date" };
+        Object[][] data = new Object[0][3];
+        return new JTable(data, columnNames);
+    }
 
-            table = new JTable(data, columnNames);
-        } catch (Exception e) {
-            System.out.println(e);
+    private TableModel makeStudentAssignmentsTable(Student student) {
+        String[] columnNames = { "Name", "Grade", "Due Date" };
+        Object[][] data = new Object[student.grades.size()][3];
+        for (int i = 0; i < student.grades.size(); i++) {
+            Object[] obj = { student.grades.elementAt(i).name, student.grades.elementAt(i).grade,
+                    student.grades.elementAt(i).dueDate };
+            data[i] = obj;
         }
-        return table;
+        return new DefaultTableModel(data, columnNames);
     }
 
     private void createUI() {
@@ -162,19 +197,23 @@ public class App {
         btn_StudentList = new JButton();
         btn_AssignmentList = new JButton();
 
-        lbl_LeftPanelTitle = new JLabel();
         pnl_StudentListPanel = new JPanel();
-        pnl_AssignmentListPanel = new JPanel();
+        lbl_StudentListTitle = new JLabel();
         tbl_StudentList = new JTable();
+        pnl_AssignmentListPanel = new JPanel();
+        lbl_AssignmentListTitle = new JLabel();
         tbl_AssignmentList = new JTable();
 
         pnl_StudentDetailsPanel = new JPanel();
         pnl_StudentInfoPanel = new JPanel();
+        lbl_StudentInfoTitle = new JLabel();
         lbl_StudentName = new JLabel();
         lbl_StudentEmail = new JLabel();
         lbl_StudentBirthday = new JLabel();
         lbl_StudenGrade = new JLabel();
+
         pnl_StudentGradesPanel = new JPanel();
+        lbl_StudentGradesTitle = new JLabel();
         tbl_StudentGradesTable = new JTable();
 
         pnl_StudentAdderPanel = new JPanel();
@@ -223,23 +262,31 @@ public class App {
         btn_AssignmentList.setText("Assignments");
         pnl_Toolbar.add(btn_AssignmentList);
 
-        // lbl_LeftPanelTitle
-        lbl_LeftPanelTitle.setAlignmentX(JLabel.CENTER_ALIGNMENT);
-        lbl_LeftPanelTitle.setFont(new Font("SansSerif", Font.BOLD, 24));
-        lbl_LeftPanelTitle.setText("Students");
-        pnl_LeftPanel.add(lbl_LeftPanelTitle);
-
         // pnl_StudentListPanel
+        pnl_StudentListPanel.setLayout(new BoxLayout(pnl_StudentListPanel, BoxLayout.PAGE_AXIS));
         pnl_LeftPanel.add(pnl_StudentListPanel);
+
+        // lbl_StudentListTitle
+        lbl_StudentListTitle.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+        lbl_StudentListTitle.setFont(new Font("SansSerif", Font.BOLD, 24));
+        lbl_StudentListTitle.setText("Students");
+        pnl_StudentListPanel.add(lbl_StudentListTitle);
 
         // tbl_StudentList
         tbl_StudentList = makeStudentsTable();
-        tbl_StudentList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tbl_StudentList.setAlignmentX(JTable.CENTER_ALIGNMENT);
         pnl_StudentListPanel.add(new JScrollPane(tbl_StudentList));
 
         // pnl_AssignmentListPanel
+        pnl_AssignmentListPanel.setLayout(new BoxLayout(pnl_AssignmentListPanel, BoxLayout.PAGE_AXIS));
         pnl_AssignmentListPanel.setVisible(false);
         pnl_LeftPanel.add(pnl_AssignmentListPanel, gb_constraints);
+
+        // lbl_AssignmentListTitle
+        lbl_AssignmentListTitle.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+        lbl_AssignmentListTitle.setFont(new Font("SansSerif", Font.BOLD, 24));
+        lbl_AssignmentListTitle.setText("Assignments");
+        pnl_AssignmentListPanel.add(lbl_AssignmentListTitle);
 
         // tbl_AssignmentList
         tbl_AssignmentList = makeAssignmentsTable();
@@ -255,34 +302,45 @@ public class App {
 
         // pnl_StudentInfoPanel
         pnl_StudentInfoPanel.setLayout(new BoxLayout(pnl_StudentInfoPanel, BoxLayout.PAGE_AXIS));
+        gb_constraints.weighty = 0.3;
         pnl_StudentDetailsPanel.add(pnl_StudentInfoPanel, gb_constraints);
 
+        // lbl_StudentInfoTitle
+        lbl_StudentInfoTitle.setFont(new Font("SansSerif", Font.BOLD, 24));
+        lbl_StudentInfoTitle.setText("Student Info");
+        pnl_StudentInfoPanel.add(lbl_StudentInfoTitle);
+
         // lbl_StudentName
-        lbl_StudentName.setAlignmentX(JLabel.CENTER_ALIGNMENT);
         lbl_StudentName.setFont(new Font("SansSerif", Font.BOLD, 18));
         lbl_StudentName.setText("Select a Student");
         pnl_StudentInfoPanel.add(lbl_StudentName);
 
         // lbl_StudentEmail
-        lbl_StudentEmail.setAlignmentX(JLabel.CENTER_ALIGNMENT);
         lbl_StudentEmail.setFont(new Font("SansSerif", Font.PLAIN, 14));
         pnl_StudentInfoPanel.add(lbl_StudentEmail);
 
         // lbl_StudentBirthday
-        lbl_StudentBirthday.setAlignmentX(JLabel.CENTER_ALIGNMENT);
         lbl_StudentBirthday.setFont(new Font("SansSerif", Font.PLAIN, 14));
         pnl_StudentInfoPanel.add(lbl_StudentBirthday);
 
         // lbl_StudenGrade
-        lbl_StudenGrade.setAlignmentX(JLabel.CENTER_ALIGNMENT);
         lbl_StudenGrade.setFont(new Font("SansSerif", Font.PLAIN, 14));
         pnl_StudentInfoPanel.add(lbl_StudenGrade);
 
         // pnl_StudentGradesPanel
+        pnl_StudentGradesPanel.setLayout(new BoxLayout(pnl_StudentGradesPanel, BoxLayout.PAGE_AXIS));
         gb_constraints.gridy = 1;
+        gb_constraints.weighty = 0.7;
         pnl_StudentDetailsPanel.add(pnl_StudentGradesPanel, gb_constraints);
 
+        // lbl_StudentGradesTitle
+        lbl_StudentGradesTitle.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+        lbl_StudentGradesTitle.setFont(new Font("SansSerif", Font.BOLD, 24));
+        lbl_StudentGradesTitle.setText("Student Grades");
+        pnl_StudentGradesPanel.add(lbl_StudentGradesTitle);
+
         // tbl_StudentGradesTable
+        tbl_StudentGradesTable = makeStudentAssignmentsTable();
         tbl_StudentGradesTable.setAlignmentX(JTable.CENTER_ALIGNMENT);
         pnl_StudentGradesPanel.add(new JScrollPane(tbl_StudentGradesTable));
 
@@ -309,18 +367,12 @@ public class App {
 
     public static void main(String[] args) throws Exception {
         App app = new App();
-        app.createUI();
-        app.createEvents();
-    }
-
-    class SharedListSelectionHandler implements ListSelectionListener {
-        public void valueChanged(ListSelectionEvent e) {
-            if (tbl_StudentList.getSelectedRow() != -1) {
-                displayStudentInfo(tbl_StudentList.getSelectedRow());
-            } else if (tbl_AssignmentList.getSelectedRow() != -1) {
-                System.out.println(tbl_AssignmentList.getValueAt(tbl_AssignmentList.getSelectedRow(), 0));
+        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                app.createUI();
+                app.createEvents();
             }
-        }
+        });
     }
 
     private static GridBagConstraints gb_constraints = new GridBagConstraints();
@@ -335,20 +387,24 @@ public class App {
     private JButton btn_StudentList;
     private JButton btn_AssignmentList;
 
-    private JLabel lbl_LeftPanelTitle;
     private JPanel pnl_StudentListPanel;
+    private JLabel lbl_StudentListTitle;
     private JTable tbl_StudentList;
 
     private JPanel pnl_AssignmentListPanel;
+    private JLabel lbl_AssignmentListTitle;
     private JTable tbl_AssignmentList;
 
     private JPanel pnl_StudentDetailsPanel;
     private JPanel pnl_StudentInfoPanel;
+    private JLabel lbl_StudentInfoTitle;
     private JLabel lbl_StudentName;
     private JLabel lbl_StudentEmail;
     private JLabel lbl_StudentBirthday;
     private JLabel lbl_StudenGrade;
+
     private JPanel pnl_StudentGradesPanel;
+    private JLabel lbl_StudentGradesTitle;
     private JTable tbl_StudentGradesTable;
 
     private JPanel pnl_StudentAdderPanel;

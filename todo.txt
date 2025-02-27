@@ -1,11 +1,19 @@
 Left Pages
-| | Student List
-| | Assignment List
+|V| Student List
+|V| Assignment List
+| | Give Lists Bigger Text
 
 Right Pages
 | | Student Details
+    | | Add an Edit Button
 | | Student Adder
 | | Student Editor
 | | Assignment Creator
 | | Assignment Editor
 | | Assignment Details
+
+Database Functions
+|V| Add Assignment
+|V| Update Student Assignments
+|V| Calculate Student Grades
+|V| Edit Student Info

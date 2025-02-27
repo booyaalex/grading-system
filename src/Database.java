@@ -1,5 +1,7 @@
 import java.sql.*;
 import com.google.gson.Gson;
+
+import java.util.Arrays;
 import java.util.Vector;
 
 class Student {
@@ -9,7 +11,7 @@ class Student {
     String email;
     Date birthday;
     int overallGrade;
-    Assignment[] grades;
+    Vector<Assignment> grades;
 
     public Student(int studentID, String firstName, String lastName, String email, Date birthday, int overallGrade) {
         this.studentID = studentID;
@@ -78,7 +80,8 @@ public class Database {
         try {
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(
-                    "select * from students where FIRST_NAME = '" + fullName[0] + "' AND LAST_NAME = '" + fullName[1] + "';");
+                    "select * from students where FIRST_NAME = '" + fullName[0] + "' AND LAST_NAME = '" + fullName[1]
+                            + "';");
 
             while (resultSet.next()) {
                 student = new Student(resultSet.getInt("ID"),
@@ -103,7 +106,7 @@ public class Database {
         try {
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(
-                    "select * from assignments");
+                    "SELECT * FROM assignments");
 
             while (resultSet.next()) {
                 Assignment assignment = new Assignment(resultSet.getInt("ID"),
@@ -126,22 +129,77 @@ public class Database {
             statement.executeUpdate(
                     "INSERT INTO students(ID, FIRST_NAME, LAST_NAME, EMAIL, BIRTHDAY, OVERALL_GRADE, GRADES) VALUES('"
                             + student.studentID + "', '" + student.firstName + "', '" + student.lastName + "', '"
-                            + student.email + "', '" + student.birthday + "', '" + student.overallGrade + "', '" + serializeString(student.grades)
-                            + "');");
+                            + student.email + "', '" + student.birthday + "', '" + student.overallGrade + "', '"
+                            + serializeString(student.grades.toArray())
+                            + "')");
             statement.close();
         } catch (Exception exception) {
             System.out.println(exception);
         }
     }
 
-    private static String serializeString(Object obj) {
-        Gson gson = new Gson();
-        return gson.toJson(obj);
+    public void addAssignment(Assignment assignment) {
+        try {
+            Statement statement = connection.createStatement();
+            statement.executeUpdate(
+                    "INSERT INTO assignments(ID, NAME, DUE_DATE) VALUES('"
+                            + assignment.assignmentID + "', '" + assignment.name + "', '" + assignment.dueDate + "')");
+            statement.close();
+
+            Vector<Student> students = getStudents();
+            for (Student student : students) {
+                student.grades.add(assignment);
+                updateStudent(student);
+            }
+        } catch (Exception exception) {
+            System.out.println(exception);
+        }
     }
 
-    private static Assignment[] deserializeString(String str) throws Exception {
+    public void updateStudent(Student student) {
+        try {
+            Statement statement = connection.createStatement();
+            statement.executeUpdate(
+                    "UPDATE students " +
+                            "SET FIRST_NAME = '" + student.firstName + "', " +
+                            "LAST_NAME = '" + student.lastName + "', " +
+                            "EMAIL = '" + student.email + "', " +
+                            "OVERALL_GRADE = '" + student.overallGrade + "', " +
+                            "GRADES = '" + serializeString(student.grades.toArray()) + "' " +
+                            "WHERE ID = '" + student.studentID + "'");
+            statement.close();
+        } catch (Exception exception) {
+            System.out.println(exception);
+        }
+    }
+
+    public int calculateStudentOverallGrade(Student student) {
+        int overallGrade = 0;
+        int totalAssignments;
+
+        totalAssignments = student.grades.size();
+        for (Assignment assignment : student.grades) {
+            if (assignment.grade == null) {
+                totalAssignments--;
+                continue;
+            }
+            overallGrade += assignment.grade;
+        }
+        overallGrade /= totalAssignments;
+
+        return overallGrade;
+    }
+
+    private static String serializeString(Object[] obj) {
         Gson gson = new Gson();
-        return gson.fromJson(str, Assignment[].class);
+        String result = gson.toJson(obj);
+        return result;
+    }
+
+    private static Vector<Assignment> deserializeString(String str) throws Exception {
+        Gson gson = new Gson();
+        Assignment[] result = gson.fromJson(str, Assignment[].class);
+        return new Vector<>(Arrays.asList(result));
     }
 
     public Database() {
