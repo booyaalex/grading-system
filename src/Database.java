@@ -1,40 +1,7 @@
 import java.sql.*;
 import com.google.gson.Gson;
-
 import java.util.Arrays;
 import java.util.Vector;
-
-class Student {
-    int studentID;
-    String firstName;
-    String lastName;
-    String email;
-    Date birthday;
-    int overallGrade;
-    Vector<Assignment> grades;
-
-    public Student(int studentID, String firstName, String lastName, String email, Date birthday, int overallGrade) {
-        this.studentID = studentID;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.birthday = birthday;
-        this.overallGrade = overallGrade;
-    }
-}
-
-class Assignment {
-    int assignmentID;
-    String name;
-    Date dueDate;
-    Integer grade = null;
-
-    public Assignment(int assignmentID, String name, Date dueDate) {
-        this.assignmentID = assignmentID;
-        this.name = name;
-        this.dueDate = dueDate;
-    }
-}
 
 public class Database {
     /*

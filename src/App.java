@@ -1,47 +1,10 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.Date;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-
 import javax.swing.*;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
 import javax.swing.table.*;
-import java.util.Locale;
 import java.util.Vector;
-
-class Student {
-    int studentID;
-    String firstName;
-    String lastName;
-    String email;
-    Date birthday;
-    int overallGrade;
-    Vector<Assignment> grades;
-
-    public Student(int studentID, String firstName, String lastName, String email, Date birthday, int overallGrade) {
-        this.studentID = studentID;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.birthday = birthday;
-        this.overallGrade = overallGrade;
-    }
-}
-
-class Assignment {
-    int assignmentID;
-    String name;
-    Date dueDate;
-    Integer grade = null;
-
-    public Assignment(int assignmentID, String name, Date dueDate) {
-        this.assignmentID = assignmentID;
-        this.name = name;
-        this.dueDate = dueDate;
-    }
-}
 
 public class App {
     /*
@@ -68,8 +31,11 @@ public class App {
         tbl_StudentList.addMouseListener(new MouseListener() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                Database db = new Database();
                 if (tbl_StudentList.getSelectedRow() != -1) {
-                    displayStudentInfo(tbl_StudentList.getSelectedRow());
+                    StudentDetails.displayStudentInfo(
+                            db.getStudent(tbl_StudentList.getValueAt(tbl_StudentList.getSelectedRow(), 0) + " "
+                                    + tbl_StudentList.getValueAt(tbl_StudentList.getSelectedRow(), 1)));
                 }
             }
 
@@ -87,12 +53,6 @@ public class App {
 
             @Override
             public void mouseExited(MouseEvent e) {
-            }
-        });
-        btn_EditStudent.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-
             }
         });
         btn_StudentEditorUpdateButton.addActionListener(new ActionListener() {
@@ -116,103 +76,39 @@ public class App {
      * Purpose: Make the selected selected JPanel visible, while hiding the others
      * on pnl_RightPanel;
      */
-    private void displayRightPanel(JPanel selectedPanel) {
+    public void displayRightPanel(String panelName) {
         JPanel[] rightPanels = { pnl_StudentDetailsPanel, pnl_StudentAdderPanel, pnl_StudentEditorPanel,
                 pnl_AssignmentDetailsPanel, pnl_AssignmentCreatorPanel, pnl_AssignmentEditorPanel };
+        JPanel selectedPanel = new JPanel();
+
+        switch (panelName) {
+            case "pnl_StudentDetailsPanel":
+                selectedPanel = pnl_StudentDetailsPanel;
+                break;
+            case "pnl_StudentAdderPanel":
+                selectedPanel = pnl_StudentAdderPanel;
+                break;
+            case "pnl_StudentEditorPanel":
+                selectedPanel = pnl_StudentEditorPanel;
+                break;
+            case "pnl_AssignmentDetailsPanel":
+                selectedPanel = pnl_AssignmentDetailsPanel;
+                break;
+            case "pnl_AssignmentCreatorPanel":
+                selectedPanel = pnl_AssignmentCreatorPanel;
+                break;
+            case "pnl_AssignmentEditorPanel":
+                selectedPanel = pnl_AssignmentEditorPanel;
+                break;
+        }
+
         for (JPanel panel : rightPanels) {
             if (panel == selectedPanel) {
-                panel.setVisible(true);
+                pnl_StudentDetailsPanel.setVisible(true);
             } else {
                 panel.setVisible(false);
             }
         }
-    }
-
-    /*
-     * Name: displayStudentInfo();
-     * Input: The index of the selected row on tbl_StudentList;
-     * Output: None;
-     * Purpose: Display the information of the selected student from tbl_StudentList
-     * on pnl_StudentDetailsPanel;
-     */
-    private void displayStudentInfo(int selectedRowIndex) {
-        Database db = new Database();
-
-        Student student = db.getStudent(tbl_StudentList.getValueAt(selectedRowIndex, 0) + " "
-                + tbl_StudentList.getValueAt(selectedRowIndex, 1));
-        lbl_StudentName.setText(student.firstName + " " + student.lastName);
-        lbl_StudentEmail.setText("Email: " + student.email);
-        lbl_StudentBirthday.setText("Date of Birth: "
-                + DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.ENGLISH).format(student.birthday));
-        lbl_StudenGrade.setText("Grade: " + String.valueOf(student.overallGrade));
-
-        btn_EditStudent.removeActionListener(btn_EditStudent.getActionListeners()[0]);
-        btn_EditStudent.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                displayStudentEditor(student);
-            }
-        });
-
-        tbl_StudentGradesTable.setModel(updateStudentAssignmentsTable(student));
-        tbl_StudentGradesTable.getModel().addTableModelListener(new TableModelListener() {
-            public void tableChanged(TableModelEvent evt) {
-                if (evt.getColumn() != 1) {
-                    return;
-                }
-                student.grades.elementAt(tbl_StudentGradesTable.getSelectedRow()).grade = Integer
-                        .valueOf(tbl_StudentGradesTable.getValueAt(tbl_StudentGradesTable.getSelectedRow(), 1) + "");
-                student.overallGrade = db.calculateStudentOverallGrade(student);
-                db.updateStudent(student);
-
-                updateStudentsTable();
-                displayStudentInfo(student);
-            }
-        });
-
-        displayRightPanel(pnl_StudentDetailsPanel);
-    }
-
-    /*
-     * Name: displayStudentInfo();
-     * Input: The student to display;
-     * Output: None;
-     * Purpose: Display the information of the given student on
-     * pnl_StudentDetailsPanel;
-     */
-    private void displayStudentInfo(Student student) {
-        lbl_StudentName.setText(student.firstName + " " + student.lastName);
-        lbl_StudentEmail.setText("Email: " + student.email);
-        lbl_StudentBirthday.setText("Date of Birth: "
-                + DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.ENGLISH).format(student.birthday));
-        lbl_StudenGrade.setText("Grade: " + String.valueOf(student.overallGrade));
-
-        btn_EditStudent.removeActionListener(btn_EditStudent.getActionListeners()[0]);
-        btn_EditStudent.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                displayStudentEditor(student);
-            }
-        });
-
-        tbl_StudentGradesTable.setModel(updateStudentAssignmentsTable(student));
-        tbl_StudentGradesTable.getModel().addTableModelListener(new TableModelListener() {
-            public void tableChanged(TableModelEvent evt) {
-                Database db = new Database();
-                if (evt.getColumn() != 1) {
-                    return;
-                }
-                student.grades.elementAt(tbl_StudentGradesTable.getSelectedRow()).grade = Integer
-                        .valueOf(tbl_StudentGradesTable.getValueAt(tbl_StudentGradesTable.getSelectedRow(), 1) + "");
-                student.overallGrade = db.calculateStudentOverallGrade(student);
-                db.updateStudent(student);
-
-                updateStudentsTable();
-                displayStudentInfo(student);
-            }
-        });
-
-        displayRightPanel(pnl_StudentDetailsPanel);
     }
 
     /*
@@ -238,15 +134,15 @@ public class App {
 
                 student.firstName = txf_StudentEditorFirstNameTextField.getText();
                 student.lastName = txf_StudentEditorLastNameTextField.getText();
-                if (!txf_StudentEditorEmailTextField.getText().matches(emailFormat)) { 
-                    return; //Add Error Message 
+                if (!txf_StudentEditorEmailTextField.getText().matches(emailFormat)) {
+                    return; // Add Error Message
                 }
                 student.email = txf_StudentEditorEmailTextField.getText();
                 student.birthday = Date.valueOf(ftf_StudentEditorBirthdayTextField.getValue().toString());
 
                 db.updateStudent(student);
                 updateStudentsTable();
-                displayStudentInfo(student);
+                StudentDetails.displayStudentInfo(student);
             }
         });
 
@@ -254,11 +150,11 @@ public class App {
         btn_StudentEditorCancelButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                displayStudentInfo(student);
+                StudentDetails.displayStudentInfo(student);
             }
         });
 
-        displayRightPanel(pnl_StudentEditorPanel);
+        displayRightPanel("pnl_StudentEditorPanel");
     }
 
     /*
@@ -279,7 +175,7 @@ public class App {
      * Output: None;
      * Purpose: Updates the data on tbl_StudentList and resizes the columns;
      */
-    private void updateStudentsTable() {
+    public void updateStudentsTable() {
         Database db = new Database();
 
         String[] columnNames = { "First Name", "Last Name", "Email", "Grade" };
@@ -337,35 +233,6 @@ public class App {
     }
 
     /*
-     * Name: makeStudentAssignmentsTable();
-     * Input: None;
-     * Output: A template for tbl_StudentGradesTable;
-     * Purpose: Creates the columns and size the columns for tbl_StudentGradesTable;
-     */
-    private JTable makeStudentAssignmentsTable() {
-        String[] columnNames = { "Name", "Grade", "Due Date" };
-        Object[][] data = new Object[0][3];
-        return new JTable(data, columnNames);
-    }
-
-    /*
-     * Name: updateStudentAssignmentsTable();
-     * Input: None;
-     * Output: Data for tbl_StudentGradesTable;
-     * Purpose: Updates the data on tbl_StudentGradesTable;
-     */
-    private TableModel updateStudentAssignmentsTable(Student student) {
-        String[] columnNames = { "Name", "Grade", "Due Date" };
-        Object[][] data = new Object[student.grades.size()][3];
-        for (int i = 0; i < student.grades.size(); i++) {
-            Object[] obj = { student.grades.elementAt(i).name, student.grades.elementAt(i).grade,
-                    student.grades.elementAt(i).dueDate };
-            data[i] = obj;
-        }
-        return new DefaultTableModel(data, columnNames);
-    }
-
-    /*
      * Name: createUI();
      * Input: None;
      * Output: None;
@@ -402,19 +269,6 @@ public class App {
         pnl_AssignmentDetailsPanel = new JPanel();
         pnl_AssignmentCreatorPanel = new JPanel();
         pnl_AssignmentEditorPanel = new JPanel();
-
-        pnl_StudentInfoPanel = new JPanel();
-        lbl_StudentInfoTitle = new JLabel();
-        pnl_StudentInfoSubPanel = new JPanel();
-        lbl_StudentName = new JLabel();
-        lbl_StudentEmail = new JLabel();
-        lbl_StudentBirthday = new JLabel();
-        lbl_StudenGrade = new JLabel();
-        btn_EditStudent = new JButton();
-
-        pnl_StudentGradesPanel = new JPanel();
-        lbl_StudentGradesTitle = new JLabel();
-        tbl_StudentGradesTable = new JTable();
 
         lbl_StudentEditorTitle = new JLabel();
         pnl_StudentEditorFields = new JPanel();
@@ -504,6 +358,7 @@ public class App {
         pnl_AssignmentListPanel.add(new JScrollPane(tbl_AssignmentList));
 
         // pnl_StudentDetailsPanel
+        pnl_StudentDetailsPanel = StudentDetails.createStudentDetailsPanel();
         gb_constraints.gridx = 0;
         gb_constraints.gridy = 0;
         gb_constraints.weightx = 0.5;
@@ -531,66 +386,6 @@ public class App {
         // pnl_AssignmentEditorPanel
         pnl_AssignmentEditorPanel.setVisible(false);
         pnl_RightPanel.add(pnl_AssignmentEditorPanel, gb_constraints);
-
-        // pnl_StudentInfoPanel
-        pnl_StudentInfoPanel.setLayout(new BoxLayout(pnl_StudentInfoPanel, BoxLayout.PAGE_AXIS));
-        gb_constraints.insets = new Insets(0, 0, 25, 0);
-        gb_constraints.weighty = 0.3;
-        pnl_StudentDetailsPanel.add(pnl_StudentInfoPanel, gb_constraints);
-
-        // lbl_StudentInfoTitle
-        lbl_StudentInfoTitle.setAlignmentX(JLabel.CENTER_ALIGNMENT);
-        lbl_StudentInfoTitle.setFont(new Font("SansSerif", Font.BOLD, 24));
-        lbl_StudentInfoTitle.setText("Student Info");
-        pnl_StudentInfoPanel.add(lbl_StudentInfoTitle);
-
-        // pnl_StudentInfoSubPanel
-        pnl_StudentInfoSubPanel.setAlignmentX(JPanel.CENTER_ALIGNMENT);
-        pnl_StudentInfoSubPanel.setMaximumSize(pnl_StudentDetailsPanel.getMaximumSize());
-        pnl_StudentInfoSubPanel.setLayout(new BoxLayout(pnl_StudentInfoSubPanel, BoxLayout.PAGE_AXIS));
-        pnl_StudentInfoPanel.add(pnl_StudentInfoSubPanel);
-
-        // lbl_StudentName
-        lbl_StudentName.setFont(new Font("SansSerif", Font.BOLD, 20));
-        lbl_StudentName.setText("Select a Student");
-        pnl_StudentInfoSubPanel.add(lbl_StudentName);
-
-        // lbl_StudentEmail
-        lbl_StudentEmail.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        pnl_StudentInfoSubPanel.add(lbl_StudentEmail);
-
-        // lbl_StudentBirthday
-        lbl_StudentBirthday.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        pnl_StudentInfoSubPanel.add(lbl_StudentBirthday);
-
-        // lbl_StudenGrade
-        lbl_StudenGrade.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        pnl_StudentInfoSubPanel.add(lbl_StudenGrade);
-
-        // btn_EditStudent
-        btn_EditStudent.setAlignmentX(JButton.CENTER_ALIGNMENT);
-        btn_EditStudent.setText("Edit Student");
-        pnl_StudentInfoPanel.add(btn_EditStudent);
-
-        // Blank Space
-        pnl_StudentDetailsPanel.add(new Box.Filler(new Dimension(0, 0), new Dimension(0, 100), new Dimension(0, 100)));
-
-        // pnl_StudentGradesPanel
-        pnl_StudentGradesPanel.setLayout(new BoxLayout(pnl_StudentGradesPanel, BoxLayout.PAGE_AXIS));
-        gb_constraints.gridy = 1;
-        gb_constraints.weighty = 0.7;
-        pnl_StudentDetailsPanel.add(pnl_StudentGradesPanel, gb_constraints);
-
-        // lbl_StudentGradesTitle
-        lbl_StudentGradesTitle.setAlignmentX(JLabel.CENTER_ALIGNMENT);
-        lbl_StudentGradesTitle.setFont(new Font("SansSerif", Font.BOLD, 24));
-        lbl_StudentGradesTitle.setText("Student Grades");
-        pnl_StudentGradesPanel.add(lbl_StudentGradesTitle);
-
-        // tbl_StudentGradesTable
-        tbl_StudentGradesTable = makeStudentAssignmentsTable();
-        tbl_StudentGradesTable.setAlignmentX(JTable.CENTER_ALIGNMENT);
-        pnl_StudentGradesPanel.add(new JScrollPane(tbl_StudentGradesTable));
 
         // lbl_StudentEditorTitle
         lbl_StudentEditorTitle.setAlignmentX(JLabel.CENTER_ALIGNMENT);
@@ -689,27 +484,18 @@ public class App {
 
     private JPanel pnl_StudentListPanel;
     private JLabel lbl_StudentListTitle;
-    private JTable tbl_StudentList;
+    private static JTable tbl_StudentList;
 
     private JPanel pnl_AssignmentListPanel;
     private JLabel lbl_AssignmentListTitle;
     private JTable tbl_AssignmentList;
 
-    private JPanel pnl_StudentDetailsPanel;
-    private JPanel pnl_StudentAdderPanel;
-    private JPanel pnl_StudentEditorPanel;
-    private JPanel pnl_AssignmentDetailsPanel;
-    private JPanel pnl_AssignmentCreatorPanel;
-    private JPanel pnl_AssignmentEditorPanel;
-
-    private JPanel pnl_StudentInfoPanel;
-    private JLabel lbl_StudentInfoTitle;
-    private JPanel pnl_StudentInfoSubPanel;
-    private JLabel lbl_StudentName;
-    private JLabel lbl_StudentEmail;
-    private JLabel lbl_StudentBirthday;
-    private JLabel lbl_StudenGrade;
-    private JButton btn_EditStudent;
+    private static JPanel pnl_StudentDetailsPanel;
+    private static JPanel pnl_StudentAdderPanel;
+    private static JPanel pnl_StudentEditorPanel;
+    private static JPanel pnl_AssignmentDetailsPanel;
+    private static JPanel pnl_AssignmentCreatorPanel;
+    private static JPanel pnl_AssignmentEditorPanel;
 
     private JLabel lbl_StudentEditorTitle;
     private JPanel pnl_StudentEditorFields;
@@ -723,8 +509,4 @@ public class App {
     private JFormattedTextField ftf_StudentEditorBirthdayTextField;
     private JButton btn_StudentEditorUpdateButton;
     private JButton btn_StudentEditorCancelButton;
-
-    private JPanel pnl_StudentGradesPanel;
-    private JLabel lbl_StudentGradesTitle;
-    private JTable tbl_StudentGradesTable;
 }
