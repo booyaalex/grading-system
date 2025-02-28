@@ -37,6 +37,12 @@ class Assignment {
 }
 
 public class Database {
+    /*
+     * Name: connectToDatabase();
+     * Input: None;
+     * Output: None;
+     * Purpose: Sets up the connection to the MySQL database;
+     */
     private void connectToDatabase() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -48,6 +54,12 @@ public class Database {
         }
     }
 
+    /*
+     * Name: getStudents();
+     * Input: None;
+     * Output: A vector of all students in the database;
+     * Purpose: Gets all students from the database and returns them;
+     */
     public Vector<Student> getStudents() {
         Vector<Student> students = new Vector<>();
         try {
@@ -62,7 +74,7 @@ public class Database {
                         resultSet.getString("EMAIL"),
                         resultSet.getDate("BIRTHDAY"),
                         resultSet.getInt("OVERALL_GRADE"));
-                student.grades = deserializeString(resultSet.getString("GRADES"));
+                student.grades = deserializeAssignments(resultSet.getString("GRADES"));
                 students.add(student);
             }
 
@@ -74,6 +86,12 @@ public class Database {
         return students;
     }
 
+    /*
+     * Name: getStudent();
+     * Input: The students full name (John Doe);
+     * Output: The student with the given name;
+     * Purpose: Returns the student with the given name;
+     */
     public Student getStudent(String name) {
         Student student = null;
         String[] fullName = name.split(" ");
@@ -90,7 +108,7 @@ public class Database {
                         resultSet.getString("EMAIL"),
                         resultSet.getDate("BIRTHDAY"),
                         resultSet.getInt("OVERALL_GRADE"));
-                student.grades = deserializeString(resultSet.getString("GRADES"));
+                student.grades = deserializeAssignments(resultSet.getString("GRADES"));
             }
 
             resultSet.close();
@@ -101,6 +119,12 @@ public class Database {
         return student;
     }
 
+    /*
+     * Name: getAssignments();
+     * Input: None;
+     * Output: A vector of all assignments in the database;
+     * Purpose: Gets all assignments from the database and returns them;
+     */
     public Vector<Assignment> getAssignments() {
         Vector<Assignment> assignments = new Vector<>();
         try {
@@ -123,6 +147,12 @@ public class Database {
         return assignments;
     }
 
+    /*
+     * Name: addStudent();
+     * Input: A student to be added;
+     * Output: None;
+     * Purpose: Takes a student and adds them to the database;
+     */
     public void addStudent(Student student) {
         try {
             Statement statement = connection.createStatement();
@@ -130,7 +160,7 @@ public class Database {
                     "INSERT INTO students(ID, FIRST_NAME, LAST_NAME, EMAIL, BIRTHDAY, OVERALL_GRADE, GRADES) VALUES('"
                             + student.studentID + "', '" + student.firstName + "', '" + student.lastName + "', '"
                             + student.email + "', '" + student.birthday + "', '" + student.overallGrade + "', '"
-                            + serializeString(student.grades.toArray())
+                            + serializeAssignments(student.grades)
                             + "')");
             statement.close();
         } catch (Exception exception) {
@@ -138,6 +168,12 @@ public class Database {
         }
     }
 
+    /*
+     * Name: addAssignment();
+     * Input: An assignment to be added;
+     * Output: None;
+     * Purpose: Takes an assignment and adds it to the database, then gives that assignment to each student ungraded;
+     */
     public void addAssignment(Assignment assignment) {
         try {
             Statement statement = connection.createStatement();
@@ -156,6 +192,12 @@ public class Database {
         }
     }
 
+    /*
+     * Name: updateStudent();
+     * Input: The student to be updated with updated values;
+     * Output: None;
+     * Purpose: Takes a student that has different values and updates the database with those new values;
+     */
     public void updateStudent(Student student) {
         try {
             Statement statement = connection.createStatement();
@@ -165,7 +207,7 @@ public class Database {
                             "LAST_NAME = '" + student.lastName + "', " +
                             "EMAIL = '" + student.email + "', " +
                             "OVERALL_GRADE = '" + student.overallGrade + "', " +
-                            "GRADES = '" + serializeString(student.grades.toArray()) + "' " +
+                            "GRADES = '" + serializeAssignments(student.grades) + "' " +
                             "WHERE ID = '" + student.studentID + "'");
             statement.close();
         } catch (Exception exception) {
@@ -173,6 +215,12 @@ public class Database {
         }
     }
 
+    /*
+     * Name: calculateStudentOverallGrade();
+     * Input: The student and their assignments to be graded;
+     * Output: The overall grade of the student;
+     * Purpose: Takes a student and their assignment grades and calculates the overall grade of all their assignments;
+     */
     public int calculateStudentOverallGrade(Student student) {
         int overallGrade = 0;
         int totalAssignments;
@@ -190,13 +238,25 @@ public class Database {
         return overallGrade;
     }
 
-    private static String serializeString(Object[] obj) {
+    /*
+     * Name: serializeAssignments();
+     * Input: A vector of assignments to be serialized;
+     * Output: The serialized assignments;
+     * Purpose: Serializes the given vector of assignments and returns it;
+     */
+    private static String serializeAssignments(Vector<Assignment> assignments) {
         Gson gson = new Gson();
-        String result = gson.toJson(obj);
+        String result = gson.toJson(assignments);
         return result;
     }
 
-    private static Vector<Assignment> deserializeString(String str) throws Exception {
+    /*
+     * Name: deserializeAssignments();
+     * Input: A serialized string of assignments;
+     * Output: A vector of assignments;
+     * Purpose: Takes a serialized string of assignments, deserializes it, and returns the deserialized vector;
+     */
+    private static Vector<Assignment> deserializeAssignments(String str) throws Exception {
         Gson gson = new Gson();
         Assignment[] result = gson.fromJson(str, Assignment[].class);
         return new Vector<>(Arrays.asList(result));

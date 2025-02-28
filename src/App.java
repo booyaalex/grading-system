@@ -42,6 +42,12 @@ class Assignment {
 }
 
 public class App {
+    /*
+     * Name: createEvents();
+     * Input: None;
+     * Output: None;
+     * Purpose: Creates the functionality for the static components;
+     */
     private void createEvents() {
         btn_StudentList.addActionListener(new ActionListener() {
             @Override
@@ -81,13 +87,14 @@ public class App {
             public void mouseExited(MouseEvent e) {
             }
         });
-        tbl_StudentGradesTable.getModel().addTableModelListener(new TableModelListener() {
-            public void tableChanged(TableModelEvent evt) {
-                System.out.println("test");
-            }
-        });
     }
 
+    /*
+     * Name: displayRightPanel();
+     * Input: A JPanel on pnl_RightPanel to make visible;
+     * Output: None;
+     * Purpose: Make the selected selected JPanel visible, while hiding the others on pnl_RightPanel;
+     */
     private void displayRightPanel(JPanel selectedPanel) {
         JPanel[] rightPanels = { pnl_StudentDetailsPanel, pnl_StudentAdderPanel, pnl_StudentEditorPanel, pnl_AssignmentDetailsPanel, pnl_AssignmentCreatorPanel, pnl_AssignmentEditorPanel };
         for(JPanel panel : rightPanels) {
@@ -99,6 +106,12 @@ public class App {
         }
     }
 
+    /*
+     * Name: displayStudentInfo();
+     * Input: The index of the selected row on tbl_StudentList;
+     * Output: None;
+     * Purpose: Display the information of the selected student from tbl_StudentList;
+     */
     private void displayStudentInfo(int selectedRowIndex) {
         Database db = new Database();
 
@@ -110,20 +123,49 @@ public class App {
                 + DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.ENGLISH).format(student.birthday));
         lbl_StudenGrade.setText("Grade: " + String.valueOf(student.overallGrade));
 
-        tbl_StudentGradesTable.setModel(makeStudentAssignmentsTable(student));
+        tbl_StudentGradesTable.setModel(updateStudentAssignmentsTable(student));
         tbl_StudentGradesTable.getModel().addTableModelListener(new TableModelListener() {
             public void tableChanged(TableModelEvent evt) {
                 if (evt.getColumn() != 1) { return; }
                 student.grades.elementAt(tbl_StudentGradesTable.getSelectedRow()).grade = Integer.valueOf(tbl_StudentGradesTable.getValueAt(tbl_StudentGradesTable.getSelectedRow(), 1) + "");
                 student.overallGrade = db.calculateStudentOverallGrade(student);
                 db.updateStudent(student);
+
+                tbl_StudentList.setModel(updateStudentsTable());
+                displayStudentInfo(selectedRowIndex);
             }
         });
 
         displayRightPanel(pnl_StudentDetailsPanel);
     }
 
+    /*
+     * Name: makeStudentsTable();
+     * Input: None;
+     * Output: A template for tbl_StudentList;
+     * Purpose: Create the columns and size the columns for tbl_StudentList;
+     */
     private JTable makeStudentsTable() {
+        String[] columnNames = { "First Name", "Last Name", "Email", "Grade" };
+        Object[][] data = new Object[0][4];
+
+        JTable table = new JTable(data, columnNames);
+        TableColumnModel columnModel = table.getColumnModel();
+        columnModel.getColumn(0).setPreferredWidth(100);
+        columnModel.getColumn(1).setPreferredWidth(100);
+        columnModel.getColumn(2).setPreferredWidth(150);
+        columnModel.getColumn(3).setPreferredWidth(50);
+
+        return table;
+    }
+
+    /*
+     * Name: updateStudentsTable();
+     * Input: None;
+     * Output: Data for tbl_StudentList;
+     * Purpose: Update the data on tbl_StudentList;
+     */
+    private TableModel updateStudentsTable() {
         Database db = new Database();
 
         String[] columnNames = { "First Name", "Last Name", "Email", "Grade" };
@@ -135,26 +177,20 @@ public class App {
             data[i] = obj;
         }
 
-        JTable table = new JTable(data, columnNames);
+        DefaultTableModel model = new DefaultTableModel(data, columnNames);
 
-        TableColumnModel columnModel = table.getColumnModel();
-        columnModel.getColumn(0).setPreferredWidth(100);
-        columnModel.getColumn(1).setPreferredWidth(100);
-        columnModel.getColumn(2).setPreferredWidth(150);
-        columnModel.getColumn(3).setPreferredWidth(50);
-
-        return table;
+        return model;
     }
 
+    /*
+     * Name: makeAssignmentsTable();
+     * Input: None;
+     * Output: A template for tbl_AssignmentList;
+     * Purpose: Create the columns and size the columns for tbl_AssignmentList;
+     */
     private JTable makeAssignmentsTable() {
-        Database db = new Database();
         String[] columnNames = { "Name", "Due Date" };
-        Vector<Assignment> assignments = db.getAssignments();
-        Object[][] data = new Object[assignments.size()][2];
-        for (int i = 0; i < assignments.size(); i++) {
-            Object[] obj = { assignments.elementAt(i).name, assignments.elementAt(i).dueDate };
-            data[i] = obj;
-        }
+        Object[][] data = new Object[0][2];
 
         JTable table = new JTable(data, columnNames);
         TableColumnModel columnModel = table.getColumnModel();
@@ -164,13 +200,46 @@ public class App {
         return table;
     }
 
+    /*
+     * Name: updateAssignmentsTable();
+     * Input: None;
+     * Output: Data for tbl_AssignmentList;
+     * Purpose: Update the data on tbl_AssignmentList;
+     */
+    private TableModel updateAssignmentsTable() {
+        Database db = new Database();
+        String[] columnNames = { "Name", "Due Date" };
+        Vector<Assignment> assignments = db.getAssignments();
+        Object[][] data = new Object[assignments.size()][2];
+        for (int i = 0; i < assignments.size(); i++) {
+            Object[] obj = { assignments.elementAt(i).name, assignments.elementAt(i).dueDate };
+            data[i] = obj;
+        }
+
+        DefaultTableModel model = new DefaultTableModel(data, columnNames);
+
+        return model;
+    }
+
+    /*
+     * Name: makeStudentAssignmentsTable();
+     * Input: None;
+     * Output: A template for tbl_StudentGradesTable;
+     * Purpose: Create the columns and size the columns for tbl_StudentGradesTable;
+     */
     private JTable makeStudentAssignmentsTable() {
         String[] columnNames = { "Name", "Grade", "Due Date" };
         Object[][] data = new Object[0][3];
         return new JTable(data, columnNames);
     }
 
-    private TableModel makeStudentAssignmentsTable(Student student) {
+    /*
+     * Name: updateStudentAssignmentsTable();
+     * Input: None;
+     * Output: Data for tbl_StudentGradesTable;
+     * Purpose: Update the data on tbl_StudentGradesTable;
+     */
+    private TableModel updateStudentAssignmentsTable(Student student) {
         String[] columnNames = { "Name", "Grade", "Due Date" };
         Object[][] data = new Object[student.grades.size()][3];
         for (int i = 0; i < student.grades.size(); i++) {
@@ -181,6 +250,12 @@ public class App {
         return new DefaultTableModel(data, columnNames);
     }
 
+    /*
+     * Name: createUI();
+     * Input: None;
+     * Output: None;
+     * Purpose: Creates all of the GUI components and sets their values;
+     */
     private void createUI() {
 
         frame = new JFrame("Teacher Grading");
@@ -274,6 +349,7 @@ public class App {
 
         // tbl_StudentList
         tbl_StudentList = makeStudentsTable();
+        tbl_StudentList.setModel(updateStudentsTable());
         tbl_StudentList.setAlignmentX(JTable.CENTER_ALIGNMENT);
         pnl_StudentListPanel.add(new JScrollPane(tbl_StudentList));
 
@@ -290,6 +366,7 @@ public class App {
 
         // tbl_AssignmentList
         tbl_AssignmentList = makeAssignmentsTable();
+        tbl_AssignmentList.setModel(updateAssignmentsTable());
         pnl_AssignmentListPanel.add(new JScrollPane(tbl_AssignmentList));
 
         // pnl_StudentDetailsPanel

@@ -2,6 +2,7 @@ Left Pages
 |V| Student List
 |V| Assignment List
 | | Give Lists Bigger Text
+| | Update Lists Dynamically
 
 Right Pages
 | | Student Details
