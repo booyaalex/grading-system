@@ -1,20 +1,54 @@
 Left Pages
 |V| Student List
 |V| Assignment List
-| | Give Lists Bigger Text
-| | Update Lists Dynamically
+|V| Give Lists Bigger Text
+|V| Update Lists Dynamically
 
 Right Pages
-| | Student Details
-    | | Add an Edit Button
+|V| Student Details
+    |V| Add an Edit Button
 | | Student Adder
-| | Student Editor
+|V| Student Editor
 | | Assignment Creator
 | | Assignment Editor
 | | Assignment Details
+| | Make Seperate Files for Each Page
 
 Database Functions
 |V| Add Assignment
 |V| Update Student Assignments
 |V| Calculate Student Grades
 |V| Edit Student Info
+
+
+Layout
+pnl_MainPanel
+
+pnl_Toolbar
+pnl_LeftPanel
+pnl_RightPanel
+
+btn_StudentList
+btn_AssignmentList
+
+pnl_StudentListPanel
+lbl_StudentListTitle
+tbl_StudentList
+
+pnl_AssignmentListPanel
+lbl_AssignmentListTitle
+tbl_AssignmentList
+
+pnl_StudentDetailsPanel
+pnl_StudentAdderPanel
+pnl_StudentEditorPanel
+pnl_AssignmentDetailsPanel
+pnl_AssignmentCreatorPanel
+pnl_AssignmentEditorPanel
+
+pnl_StudentInfoPanel
+lbl_StudentInfoTitle
+lbl_StudentName
+lbl_StudentEmail
+lbl_StudentBirthday
+lbl_StudenGrade
